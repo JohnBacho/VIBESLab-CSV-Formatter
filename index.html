@@ -5,7 +5,7 @@
     <title>VIBES Lab CSV formatter</title>
   </head>
   <body>
-    <h3>CSV Loader</h3>
+    <h3>VIBES Lab CSV formatter</h3>
     <input type="file" id="csvFile" accept=".csv" />
     <script>
       const fileInput = document.getElementById("csvFile");
@@ -21,7 +21,7 @@
         "rightEyePupilSize",
         "GameObjectInFocus",
       ];
-      
+
       fileInput.addEventListener("change", function (e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -67,7 +67,7 @@
             const rightPupil = parseFloat(row[rightPupilIndex]);
             let avgPupil = "";
             if (!isNaN(leftPupil) && !isNaN(rightPupil)) {
-              avgPupil = ((leftPupil + rightPupil) / 2);
+              avgPupil = (leftPupil + rightPupil) / 2;
             } else if (!isNaN(leftPupil)) {
               avgPupil = leftPupil;
             } else if (!isNaN(rightPupil)) {
