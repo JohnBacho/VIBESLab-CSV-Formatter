@@ -3,6 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <title>VIBES Lab CSV formatter</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div
@@ -11,97 +16,18 @@
       <img
         src="img/VIBES_LAB_Logo-WithText.png"
         alt="VIBES Lab Logo"
-        style="width: 400px; border-radius: 25px;"
-        
+        style="width: 400px; border-radius: 25px"
       />
       <h1>VIBES Lab CSV formatter</h1>
       <br />
-      <input type="file" id="csvFile" accept=".csv" />
+      <form>
+        <label style="margin-bottom: 20px">Select a CSV file:</label>
+        <br style="margin-bottom: 20px" />
+        <input type="file" id="csvFile" accept=".csv" />
+      </form>
+
+      
     </div>
-
-    <script>
-      const fileInput = document.getElementById("csvFile");
-      const keepColumns = [
-        "Date",
-        "LocalTime",
-        "Phase",
-        "TrialNumber",
-        "Step",
-        "Stage",
-        "Context",
-        "leftEyePupilSize",
-        "rightEyePupilSize",
-        "GameObjectInFocus",
-      ];
-
-      fileInput.addEventListener("change", function (e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (event) {
-          let text = event.target.result;
-          let rows = text.split("\n").map((r) => r.split(","));
-          const headerRow = rows[0];
-          const colIndexesToKeep = headerRow
-            .map((col, idx) => (keepColumns.includes(col.trim()) ? idx : -1))
-            .filter((idx) => idx !== -1);
-          const filteredRows = rows.map((row) =>
-            colIndexesToKeep.map((idx) => row[idx] || "")
-          );
-
-          filteredRows[0].splice(9, 0, "avgPupilSize");
-          const stageIndex = keepColumns.indexOf("Stage");
-          const goiIndex = keepColumns.indexOf("GameObjectInFocus");
-          const leftPupilIndex = keepColumns.indexOf("leftEyePupilSize");
-          const rightPupilIndex = keepColumns.indexOf("rightEyePupilSize");
-          const finalRows = [filteredRows[0]];
-          let lastKept = null;
-          for (let i = 1; i < filteredRows.length; i++) {
-            const row = filteredRows[i];
-            const stage = (row[stageIndex] || "").trim();
-            if (
-              stage === "InterTrial" ||
-              stage.toLowerCase().includes("baseline") ||
-              stage === "InstructionPhase"
-            ) {
-              lastKept = null;
-              continue;
-            }
-            if (lastKept === null) {
-              const emptyRow = new Array(row.length).fill("");
-              emptyRow.splice(9, 0, "");
-              finalRows.push(emptyRow);
-            }
-            if ((row[goiIndex] || "").trim().toLowerCase() === "invalidgaze") {
-              row[goiIndex] = "";
-            }
-            const leftPupil = parseFloat(row[leftPupilIndex]);
-            const rightPupil = parseFloat(row[rightPupilIndex]);
-            let avgPupil = "";
-            if (!isNaN(leftPupil) && !isNaN(rightPupil)) {
-              avgPupil = (leftPupil + rightPupil) / 2;
-            } else if (!isNaN(leftPupil)) {
-              avgPupil = leftPupil;
-            } else if (!isNaN(rightPupil)) {
-              avgPupil = rightPupil;
-            }
-            row.splice(9, 0, avgPupil);
-            finalRows.push(row);
-            lastKept = row;
-          }
-          const csvContent = finalRows.map((r) => r.join(",")).join("\n");
-          const blob = new Blob([csvContent], { type: "text/csv" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "cleaned.csv";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        };
-        reader.readAsText(file);
-      });
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>

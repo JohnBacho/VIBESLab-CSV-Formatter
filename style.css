@@ -1,0 +1,27 @@
+/* style.css */
+body {
+  font-family: "Roboto", sans-serif;
+  background-color: #ffffff;
+  color: #333;
+}
+
+input[type="file"]::file-selector-button {
+  background-color: #874caf;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+}
+
+h1 {
+  font-weight: 700;
+  color: #333;
+}
+
+label {
+  font-weight: 500;
+  color: #333;
+}
