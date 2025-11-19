@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>VIBES Lab CSV formatter</title>
+    <title>VIBES Lab CSV Eye-Tracking Processor</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
       rel="stylesheet"
@@ -10,27 +10,36 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="img/favicon(1).ico" type="image/x-icon" />
   </head>
+
   <body>
-    <div
-      style="width: 50%; margin: auto; text-align: center; padding-top: 50px"
-    >
+    <div class="container">
       <img
         src="img/VIBES_LAB_Logo-WithText.png"
         alt="VIBES Lab Logo"
-        style="width: 400px; border-radius: 25px"
+        class="logo"
       />
-      <h1>VIBES Lab CSV formatter</h1>
-      <br />
-      <form>
-        <label style="margin-bottom: 20px">Select a CSV file:</label>
-        <br style="margin-bottom: 20px" />
-        <input type="file" id="csvFile" accept=".csv" />
-        <br style="margin-bottom: 30px" />
-        <label style="font-size: small; color: rgb(194, 55, 194)"
-          >Added <span style="text-decoration: underline;">Average Pupil Size</span> and <span style="text-decoration: underline;">GameObjectInFocus</span> Calculations per trial</label
-        >
+
+      <h1>VIBES Lab CSV Eye-Tracking Processor</h1>
+
+      <form class="form-box">
+        <label>Select a CSV file</label>
+        <input type="file" id="csvFile" accept=".csv" class="input-file" />
+
+        <label>Enter Program Name</label>
+        <input
+          type="text"
+          id="Text"
+          class="text-input"
+          placeholder="SB-Woodstock(2) (defaults to 'Program')"
+        />
+
+        <p class="note">
+          Added <u>Baseline Corrections column</u>, <u>Summary table</u>,
+          <u>Average 2-Trial Blocks</u>, and <u>File Name Input</u>
+        </p>
       </form>
     </div>
+
     <script src="script.js"></script>
   </body>
 </html>

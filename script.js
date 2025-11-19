@@ -45,6 +45,30 @@ fileInput.addEventListener("change", function (e) {
     let avgTrialBaseLinePupilSize = [];
     let GOI = [];
 
+    let baselineSamples = [];
+
+    for (let i = 1; i < filteredRows.length; i++) {
+      const row = filteredRows[i];
+      const stage = (row[stageIndex] || "").trim();
+
+      if (stage === "InstructionPhase" || stage === "Instruction") {
+        const L = parseFloat(row[leftPupilIndex]);
+        const R = parseFloat(row[rightPupilIndex]);
+        console.log("Instruction phase pupil sizes:", L, R);
+
+        if (!isNaN(L) && !isNaN(R)) baselineSamples.push((L + R) / 2);
+        else if (!isNaN(L)) baselineSamples.push(L);
+        else if (!isNaN(R)) baselineSamples.push(R);
+      }
+    }
+
+    if (baselineSamples.length > 0) {
+      BaselineAVG =
+        baselineSamples.reduce((a, b) => a + b, 0) / baselineSamples.length;
+    }
+
+    console.log("First Baseline Set to =", BaselineAVG);
+
     const finalRows = [filteredRows[0]];
     let lastKept = null;
 
@@ -364,12 +388,16 @@ fileInput.addEventListener("change", function (e) {
 
     const dataCSV = finalRows.map((r) => r.join(",")).join("\n");
     const csvContent = combinedSummaryCSV + "\n" + dataCSV;
-
+    const programName = document
+      .getElementById("Text")
+      .value.replace(/\s+/g, "");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Program_${Hardware}_${ContextType}_DONE.csv`;
+    a.download = `${
+      programName || "Program"
+    }_${Hardware}_${ContextType}_DONE.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
