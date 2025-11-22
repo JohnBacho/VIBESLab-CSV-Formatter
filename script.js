@@ -17,6 +17,9 @@ fileInput.addEventListener("change", function (e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
+  const baselineCheckbox = document.getElementById("BaselineCheckbox");
+  const baselineIsChecked = baselineCheckbox.checked;
+  
   reader.onload = function (event) {
     let text = event.target.result;
     let rows = text.split("\n").map((r) => r.split(","));
@@ -32,10 +35,8 @@ fileInput.addEventListener("change", function (e) {
     filteredRows[0].splice(10, 0, "BaselineCorrectedPupilSize");
 
     const stageIndex = keepColumns.indexOf("Stage");
-
     const phaseIndex = keepColumns.indexOf("Phase");
     const trialIndex = keepColumns.indexOf("TrialNumber");
-
     const goiIndex = keepColumns.indexOf("GameObjectInFocus");
     const leftPupilIndex = keepColumns.indexOf("leftEyePupilSize");
     const rightPupilIndex = keepColumns.indexOf("rightEyePupilSize");
@@ -51,7 +52,10 @@ fileInput.addEventListener("change", function (e) {
       const row = filteredRows[i];
       const stage = (row[stageIndex] || "").trim();
 
-      if (stage === "InstructionPhase" || stage === "Instruction") {
+      if (
+        stage === "InstructionPhase" ||
+        (stage === "Instruction" && baselineIsChecked)
+      ) {
         const L = parseFloat(row[leftPupilIndex]);
         const R = parseFloat(row[rightPupilIndex]);
         console.log("Instruction phase pupil sizes:", L, R);
@@ -62,12 +66,11 @@ fileInput.addEventListener("change", function (e) {
       }
     }
 
-    if (baselineSamples.length > 0) {
+    if (baselineSamples.length > 0 && baselineIsChecked) {
       BaselineAVG =
         baselineSamples.reduce((a, b) => a + b, 0) / baselineSamples.length;
+      console.log("Initial Baseline AVG set to:", BaselineAVG);
     }
-
-    console.log("First Baseline Set to =", BaselineAVG);
 
     const finalRows = [filteredRows[0]];
     let lastKept = null;
@@ -78,22 +81,37 @@ fileInput.addEventListener("change", function (e) {
       const Phase = (row[phaseIndex] || "").trim();
       const Trial = (row[trialIndex] || "").trim();
 
+      // Skip InterTrial and InstructionPhase
       if (stage === "InterTrial" || stage === "InstructionPhase") {
         lastKept = null;
         continue;
       }
 
+      // Skip Baseline stages if checkbox is unchecked
+      if (!baselineIsChecked && stage.includes("Baseline")) {
+        lastKept = null;
+        continue;
+      }
+
+      // Insert trial summary row when transitioning between trials
       if (lastKept === null && finalRows.length - 1 !== 0) {
         const emptyRow = new Array(row.length).fill("");
 
+        // Collect data from previous trial
         for (let j = finalRows.length - 1; j >= 1; j--) {
           const prevAVGRow = finalRows[j][9];
           const prevBaseLineCorrected = finalRows[j][10];
-          const prevGOI = finalRows[j][goiIndex + 2];
+          const prevGOI = finalRows[j][goiIndex + 2]; // Always +2 because both columns exist
           const prevContext = finalRows[j][Context];
-          if (String(prevContext).trim() === "") break;
+          
+          const prevStage = (finalRows[j][stageIndex] || "").trim();
+          
+          if (String(prevContext).trim() === "" || prevStage.includes("Baseline"))
+            break;
+            
           avgTrialPupilSize.push(parseFloat(prevAVGRow));
-          avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
+          if (baselineIsChecked)
+            avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
 
           GOI.push(prevGOI);
         }
@@ -120,7 +138,7 @@ fileInput.addEventListener("change", function (e) {
         const validBaseLine = avgTrialBaseLinePupilSize.filter(
           (size) => !isNaN(size)
         );
-        if (validBaseLine.length > 0) {
+        if (validBaseLine.length > 0 && baselineIsChecked) {
           const sum = validBaseLine.reduce((a, b) => a + b, 0);
           avgTrialBaseLine = sum / validBaseLine.length;
         }
@@ -159,14 +177,19 @@ fileInput.addEventListener("change", function (e) {
 
         if (
           prevStage.includes("Baseline") &&
-          !currentStage.includes("Baseline")
+          !currentStage.includes("Baseline") &&
+          baselineIsChecked
         ) {
           console.log("SWITCH DETECTED at row", i, "→", currentStage);
 
           for (let j = finalRows.length - 1; j >= 1; j--) {
             const prevAVGRow = finalRows[j][9];
             const prevContext = finalRows[j][Context];
-            if (String(prevContext).trim() === "") break;
+            const prevStageInFinal = (finalRows[j][stageIndex] || "").trim();
+            
+            if (String(prevContext).trim() === "" || !prevStageInFinal.includes("Baseline"))
+              break;
+              
             avgTrialPupilSize.push(parseFloat(prevAVGRow));
           }
 
@@ -174,12 +197,14 @@ fileInput.addEventListener("change", function (e) {
           if (validSizes.length > 0) {
             const sum = validSizes.reduce((a, b) => a + b, 0);
             BaselineAVG = sum / validSizes.length;
+            console.log("Updated Baseline AVG to:", BaselineAVG);
           }
 
           emptyRow.splice(goiIndex, 0, "");
           emptyRow.splice(9, 0, "");
           emptyRow.splice(10, 0, BaselineAVG);
           finalRows.push(emptyRow);
+          avgTrialPupilSize = [];
         }
       }
 
@@ -195,7 +220,7 @@ fileInput.addEventListener("change", function (e) {
       let avgPupil = "";
       let BaselineCorrected = "";
 
-      if (!currentStage.includes("Baseline")) {
+      if (!currentStage.includes("Baseline") && baselineIsChecked) {
         if (!isNaN(leftPupil) && !isNaN(rightPupil)) {
           BaselineCorrected = (leftPupil + rightPupil) / 2 - BaselineAVG;
         } else if (!isNaN(leftPupil)) {
@@ -231,9 +256,15 @@ fileInput.addEventListener("change", function (e) {
       const prevBaseLineCorrected = finalRows[j][10];
       const prevGOI = finalRows[j][goiIndex + 2];
       const prevContext = finalRows[j][Context];
-      if (String(prevContext).trim() === "") break;
+      
+      const prevStage = (finalRows[j][stageIndex] || "").trim();
+
+      if (String(prevContext).trim() === "" || prevStage.includes("Baseline"))
+        break;
+        
       avgTrialPupilSize.push(parseFloat(prevAVGRow));
-      avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
+      if (baselineIsChecked)
+        avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
       GOI.push(prevGOI);
     }
 
@@ -259,7 +290,7 @@ fileInput.addEventListener("change", function (e) {
     const validBaseLine = avgTrialBaseLinePupilSize.filter(
       (size) => !isNaN(size)
     );
-    if (validBaseLine.length > 0) {
+    if (validBaseLine.length > 0 && baselineIsChecked) {
       const sum = validBaseLine.reduce((a, b) => a + b, 0);
       avgTrialBaseLine = sum / validBaseLine.length;
     }
@@ -289,6 +320,7 @@ fileInput.addEventListener("change", function (e) {
     avgTrialPupilSize = [];
     avgTrialBaseLinePupilSize = [];
 
+    // Determine context type
     const uniqueArray = Array.from(uniqueChars);
     ContextType = uniqueArray.join("");
     if (ContextType.length <= 1) {
@@ -296,6 +328,8 @@ fileInput.addEventListener("change", function (e) {
     } else {
       ContextType = "ABA";
     }
+    
+    // Determine hardware type
     Hardware = "";
     if (
       headerRow.includes("rightEyeRotationY") ||
@@ -328,9 +362,16 @@ fileInput.addEventListener("change", function (e) {
       return combined;
     }
 
-    let metrics = ["AvgPupil", "BaselineCorrectedAvg", "GOI"];
+    // Generate summary metrics
+    let metrics = [];
     let trialNumbers = "1,1,2,3,4,1,2,3,4,5,6,7,8,9,10,1";
     let summary = {};
+
+    if (baselineIsChecked) {
+      metrics = ["AvgPupil", "BaselineCorrectedAvg", "GOI"];
+    } else {
+      metrics = ["AvgPupil", "GOI"];
+    }
 
     metrics.forEach((metric) => {
       summary[metric] = { "CS+": [], "CS-": [] };
@@ -353,7 +394,6 @@ fileInput.addEventListener("change", function (e) {
 
       const isSummary =
         avgP !== "" &&
-        baseP !== "" &&
         (r[Context] === "" || r[Context] === undefined || r[Context] === null);
 
       if (isSummary) {
@@ -363,7 +403,8 @@ fileInput.addEventListener("change", function (e) {
 
         if (category === "CS+" || category === "CS-") {
           summary["AvgPupil"][category].push(avgP);
-          summary["BaselineCorrectedAvg"][category].push(baseP);
+          if (baselineIsChecked)
+            summary["BaselineCorrectedAvg"][category].push(baseP);
           summary["GOI"][category].push(goiVal);
         }
       }
