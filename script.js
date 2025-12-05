@@ -19,7 +19,7 @@ fileInput.addEventListener("change", function (e) {
   const reader = new FileReader();
   const baselineCheckbox = document.getElementById("BaselineCheckbox");
   const baselineIsChecked = baselineCheckbox.checked;
-  
+
   reader.onload = function (event) {
     let text = event.target.result;
     let rows = text.split("\n").map((r) => r.split(","));
@@ -81,7 +81,6 @@ fileInput.addEventListener("change", function (e) {
       const Phase = (row[phaseIndex] || "").trim();
       const Trial = (row[trialIndex] || "").trim();
 
-      // Skip InterTrial and InstructionPhase
       if (stage === "InterTrial" || stage === "InstructionPhase") {
         lastKept = null;
         continue;
@@ -93,22 +92,23 @@ fileInput.addEventListener("change", function (e) {
         continue;
       }
 
-      // Insert trial summary row when transitioning between trials
       if (lastKept === null && finalRows.length - 1 !== 0) {
         const emptyRow = new Array(row.length).fill("");
 
-        // Collect data from previous trial
         for (let j = finalRows.length - 1; j >= 1; j--) {
           const prevAVGRow = finalRows[j][9];
           const prevBaseLineCorrected = finalRows[j][10];
           const prevGOI = finalRows[j][goiIndex + 2]; // Always +2 because both columns exist
           const prevContext = finalRows[j][Context];
-          
+
           const prevStage = (finalRows[j][stageIndex] || "").trim();
-          
-          if (String(prevContext).trim() === "" || prevStage.includes("Baseline"))
+
+          if (
+            String(prevContext).trim() === "" ||
+            prevStage.includes("Baseline")
+          )
             break;
-            
+
           avgTrialPupilSize.push(parseFloat(prevAVGRow));
           if (baselineIsChecked)
             avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
@@ -186,10 +186,13 @@ fileInput.addEventListener("change", function (e) {
             const prevAVGRow = finalRows[j][9];
             const prevContext = finalRows[j][Context];
             const prevStageInFinal = (finalRows[j][stageIndex] || "").trim();
-            
-            if (String(prevContext).trim() === "" || !prevStageInFinal.includes("Baseline"))
+
+            if (
+              String(prevContext).trim() === "" ||
+              !prevStageInFinal.includes("Baseline")
+            )
               break;
-              
+
             avgTrialPupilSize.push(parseFloat(prevAVGRow));
           }
 
@@ -256,12 +259,12 @@ fileInput.addEventListener("change", function (e) {
       const prevBaseLineCorrected = finalRows[j][10];
       const prevGOI = finalRows[j][goiIndex + 2];
       const prevContext = finalRows[j][Context];
-      
+
       const prevStage = (finalRows[j][stageIndex] || "").trim();
 
       if (String(prevContext).trim() === "" || prevStage.includes("Baseline"))
         break;
-        
+
       avgTrialPupilSize.push(parseFloat(prevAVGRow));
       if (baselineIsChecked)
         avgTrialBaseLinePupilSize.push(parseFloat(prevBaseLineCorrected));
@@ -328,7 +331,7 @@ fileInput.addEventListener("change", function (e) {
     } else {
       ContextType = "ABA";
     }
-    
+
     // Determine hardware type
     Hardware = "";
     if (
@@ -340,31 +343,9 @@ fileInput.addEventListener("change", function (e) {
       Hardware = "SB";
     }
 
-    function combineTrialsByType(trials, groupSize = 2) {
-      const combined = [];
-      let temp = [];
-      for (let i = 0; i < trials.length; i++) {
-        const val = parseFloat(trials[i]);
-        if (!isNaN(val)) temp.push(val);
-
-        if (temp.length === groupSize) {
-          const sum = temp.reduce((a, b) => a + b, 0);
-          combined.push((sum / temp.length).toFixed(3));
-          temp = [];
-        }
-      }
-
-      if (temp.length > 0) {
-        const sum = temp.reduce((a, b) => a + b, 0);
-        combined.push((sum / temp.length).toFixed(3));
-      }
-
-      return combined;
-    }
-
-    // Generate summary metrics
     let metrics = [];
-    let trialNumbers = "1,1,2,3,4,1,2,3,4,5,6,7,8,9,10,1";
+    let trialNumbers =
+      "1,2,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2";
     let summary = {};
 
     if (baselineIsChecked) {
@@ -417,11 +398,11 @@ fileInput.addEventListener("change", function (e) {
       combinedSummaryCSV += "Trial," + trialNumbers + "\n";
 
       ["CS+", "CS-"].forEach((category) => {
-        const combinedTrials = combineTrialsByType(
-          summary[metric][category],
-          2
+        // Format values to 3 decimal places and join directly
+        const formattedValues = summary[metric][category].map((val) =>
+          parseFloat(val).toFixed(3)
         );
-        combinedSummaryCSV += category + "," + combinedTrials.join(",") + "\n";
+        combinedSummaryCSV += category + "," + formattedValues.join(",") + "\n";
       });
 
       combinedSummaryCSV += "\n";
